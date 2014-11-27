@@ -297,12 +297,16 @@ module ActiveRecord
         # Returns just a table's primary key
         def primary_key(table)
           row = exec_query(<<-end_sql, 'SCHEMA').rows.first
-            SELECT DISTINCT attr.attname
-            FROM pg_attribute attr
-            INNER JOIN pg_depend dep ON attr.attrelid = dep.refobjid AND attr.attnum = dep.refobjsubid
-            INNER JOIN pg_constraint cons ON attr.attrelid = cons.conrelid AND attr.attnum = cons.conkey[1]
-            WHERE cons.contype = 'p'
-              AND dep.refobjid = '#{quote_table_name(table)}'::regclass
+            SELECT cast(column_name as varchar(100)) as attname
+            FROM information_schema.columns c
+            JOIN
+              (SELECT substring(n.nspname,1,100) as schemaname, substring(c.relname,1,100) as tablename, c.oid as tableid
+                FROM pg_namespace n, pg_class c
+                WHERE n.oid = c.relnamespace
+                AND nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema')
+                AND c.relname <> 'temp_staging_tables_1'
+              ) t ON c.table_schema = t.schemaname AND c.table_name=t.tablename
+            WHERE table_name='#{table}' and column_default LIKE '%"identity"%'
           end_sql
 
           row && row.first
