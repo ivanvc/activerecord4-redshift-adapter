@@ -873,7 +873,7 @@ module ActiveRecord
                      pg_get_expr(d.adbin, d.adrelid), a.attnotnull, a.atttypid, a.atttypmod
                 FROM pg_attribute a LEFT JOIN pg_attrdef d
                   ON a.attrelid = d.adrelid AND a.attnum = d.adnum
-               WHERE a.attrelid = '#{table_name}'::regclass
+               WHERE a.attrelid = '#{quote_table_name(table_name)}'::regclass
                  AND a.attnum > 0 AND NOT a.attisdropped
                ORDER BY a.attnum
           SQL
